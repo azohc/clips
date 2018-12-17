@@ -1,0 +1,4 @@
+Run following cmd in core folder
+
+gcc -o clips -DLINUX=1 *.c -lm
+
