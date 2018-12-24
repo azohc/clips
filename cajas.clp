@@ -34,20 +34,20 @@
     (slot tipo (type SYMBOL)(allowed-values fragil pesado normal))
 )
 
-(deftemplate cajas
-    (caja (volumen 10) (abierta N) (tipo normal))
-    (caja (volumen 40) (abierta N) (tipo pesado))
-    (caja (volumen 21) (abierta N) (tipo normal))
-    (caja (volumen 17) (abierta N) (tipo fragil))
+(deffacts cajas
+    (caja (volumen 25) (abierta N))
+    (caja (volumen 25) (abierta N))
+    (caja (volumen 25) (abierta N))
 )
 
 (deffacts productos
-    (producto (nombre almax) (tipo normal) (envuelto N) (volumen 11))
-    (producto (nombre almax forte) (tipo pesado) (envuelto N) (volumen 41))
-    (producto (nombre paracetamol) (tipo normal) (envuelto S) (volumen 21))
-    (producto (nombre mierda fragil) (tipo fragil) (envuelto N) (volumen 27))
-    (producto (nombre tranquis) (tipo pesado) (envuelto S) (volumen 19))
-    (producto (nombre likens) (tipo fragil) (envuelto N) (volumen 29))
-    
+    (producto (nombre "almax")          (tipo normal) (envuelto N) (volumen 11))
+    (producto (nombre "paracetamol")    (tipo normal) (envuelto S) (volumen 21))
+    (producto (nombre "almax forte")    (tipo pesado) (envuelto N) (volumen 9))
+    (producto (nombre "tranquis")       (tipo pesado) (envuelto S) (volumen 6))
+    (producto (nombre "mierda fragil")  (tipo fragil) (envuelto N) (volumen 7))
+    (producto (nombre "likens")         (tipo fragil) (envuelto N) (volumen 19))
+    (producto (nombre "likens light")   (tipo fragil) (envuelto N) (volumen 6))
+
 )
 
