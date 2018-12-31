@@ -5,35 +5,37 @@
 (deftemplate producto
     (slot nombre (type STRING))
     (slot tipo (type SYMBOL)(allowed-values fragil pesado normal))
-    (slot envuelto (allowed-values S N))
+    (slot envuelto (allowed-values si no))
     (slot volumen (type INTEGER)(range 0 200))
-    (slot empaq (allowed-values S N) (default N))
+    (slot empaq (type SYMBOL) (default no))
 )
 
 (deftemplate caja
 	(slot id)
     (slot volumen (type INTEGER))
-    (slot abierta (allowed-values S N))
+    (slot abierta (allowed-values si no))
     (slot tipo (type SYMBOL)(allowed-values nulo fragil pesado normal) (default nulo))
 )
 
 ; Dispongo de un número limitado de cajas iguales, 
 ;  es decir, con la misma capacidad máxima. 
 (deffacts cajas
-    (caja (id 1) (volumen 25) (abierta N))
-    (caja (id 2) (volumen 25) (abierta N))
-    (caja (id 3) (volumen 25) (abierta N))
+    (caja (id 1) (volumen 25) (abierta no))
+    (caja (id 2) (volumen 25) (abierta no))
+    (caja (id 3) (volumen 25) (abierta no))
 )
 
 (deffacts productos
-    (producto (nombre "almax")          (tipo normal) (envuelto N) (volumen 11))
-    (producto (nombre "paracetamol")    (tipo normal) (envuelto S) (volumen 21))
-    (producto (nombre "almax forte")    (tipo pesado) (envuelto N) (volumen 9))
-    (producto (nombre "tranquis")       (tipo pesado) (envuelto S) (volumen 6))
-    (producto (nombre "mierda fragil")  (tipo fragil) (envuelto N) (volumen 7))
-    (producto (nombre "likens")         (tipo fragil) (envuelto N) (volumen 19))
-    (producto (nombre "likens light")   (tipo fragil) (envuelto N) (volumen 6))
-
+    (producto (nombre "almax")          (tipo normal) (envuelto no) (volumen 11))
+    (producto (nombre "paracetamol")    (tipo normal) (envuelto si) (volumen 21))
+    (producto (nombre "almax forte")    (tipo pesado) (envuelto no) (volumen 9))
+    (producto (nombre "tranquis")       (tipo pesado) (envuelto si) (volumen 6))
+    (producto (nombre "mierda fragil")  (tipo fragil) (envuelto no) (volumen 7))
+    (producto (nombre "likens")         (tipo fragil) (envuelto no) (volumen 19))
+    (producto (nombre "likens light")   (tipo fragil) (envuelto no) (volumen 6))
+    ;(producto (nombre "kaka")           (tipo pesado) (envuelto no) (volumen 12))
+; Comentado -> prueba el comentario de abajo del TODO -> no quedan más productos de un tipo
+; Sin comentario -> Empaqueta todo !!
 )
 
 ;--------------------- Reglas ---------------------
@@ -52,58 +54,75 @@
 
 ; def_function NO ES DEFRULE!
 ; not afines -> simetrico
-; dictar orden de ejecucion (activacion) de reglas con variables de control
+; dictar orden de ejecucion (activaciono) de reglas con variables de control
 
-
+(deftemplate control
+    (slot cajaAbierta (type INTEGER) (default -1)) 
+)
+(deffacts controlador
+    (control)
+)
+; con el controlador he conseguido que solo se pueda abrir una caja
+; cuando cajaAbierta (rollo puntero a la caja abierta) es igual a -1, hay que abrir caja
+; TODO: encontrar manera de disparar cierraCaja cuando NO QUEDEN MÁS productos
+; del TIPO de la caja con id cajaAbierta
 
 (defrule envolverProducto
-    ?hp <- (producto (envuelto N))
+    ?hp <- (producto (envuelto no))
     =>
-    (modify ?hp (envuelto S))
+    (modify ?hp (envuelto si))
     (printout t crlf "Producto envuelto" ?hp crlf)
 )
 
 ;(defrule cajaLlena
-    ;?hc <- (caja (volumen ?vc) (abierta S) (tipo ?tc))
-    ;?hpPesado <- (producto (tipo ?tp) (volumen ?vpes))
+    ;?hc <- (caja (volumen ?vc) (abierta si) (tipo ?tc))
+    ;?hpPesado <- (producto (tipo ?tp) (volumen ?vpesi))
     ;?hpLigero <- (producto (tipo ?tp) (volumen ?vlig))
     ;(test (>= ?vpes ?vlig))
 ;
 ;)
 
-(defrule pruebe
-    (forall 
-        (caja (abierta ?a))
-        (caja (tipo ?t))    
-    )
-    =>
-    (printout t crlf "Todo evalua a " ?a " tipo " ?t crlf)
-)
-
-
-;(defrule abreCaja ;estabn
-    ;?hp <- (producto (envuelto S) (empaq N) (tipo ?tp))
-    ;?hc <- (caja (tipo nulo) (abierta N))
-;
-    ;;?hcabierta <- (caja (abierta S))
-    ;;(test ?hcabierta estaLlena)
-    ;=>
-    ;;cerrar ?hcabierta
-    ;;abrir ?hc
-;
-    ;(modify ?hc (tipo ?tp) (abierta S))
-    ;(printout t crlf "Caja ligada " ?tp crlf)
-;)
-
 (defrule empaquetarProducto
-    ?hc <- (caja (abierta S) (volumen ?vc) (tipo ?tc))
-    ?hp <- (producto (envuelto S) (empaq N) (volumen ?vp) (tipo ?tp))
+    ?ctrl <- (control (cajaAbierta ?cid))
+    ?hc <- (caja (id ?id) (abierta si) (volumen ?vc) (tipo ?tc))
+    ?hp <- (producto (envuelto si) (empaq no) (volumen ?vp) (tipo ?tp))
+
+    (test (eq ?id ?cid))
     (test (>= ?vc ?vp))
     (test (eq ?tc ?tp))
     =>
-    (modify ?hp (empaq S))
+    (modify ?hp (empaq ?id))
     (modify ?hc (volumen (- ?vc ?vp)))
     (printout t crlf "Producto empaquetado: " ?vp ?vc crlf)
 )
+
+(defrule cierraCaja
+    ?ctrl <- (control (cajaAbierta ?cid))
+    ?hc <- (caja (id ?id) (volumen ?vc) (abierta si) (tipo ?tc))
+    ?hp <- (producto (tipo ?tp) (volumen ?vp) (empaq no))
+
+    (test (eq ?cid ?id))
+    (test (eq ?tc ?tp))
+    (test (> ?vp ?vc))
+
+    =>
+    (modify ?ctrl (cajaAbierta -1))
+    (modify ?hc (abierta no))
+)
+
+
+(defrule abreCaja
+    ?ctrl <- (control (cajaAbierta -1))
+    ?hc <- (caja (id ?id) (tipo nulo) (abierta no))
+    ?hp <- (producto (envuelto si) (empaq no) (tipo ?tp))
+
+    =>
+
+    (modify ?ctrl (cajaAbierta ?id))
+    (modify ?hc (tipo ?tp) (abierta si))
+    (printout t crlf "Caja ligada " ?tp crlf)
+)
+
+
 
 
