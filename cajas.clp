@@ -57,13 +57,15 @@
 ; dictar orden de ejecucion (activaciono) de reglas con variables de control
 
 (deftemplate control
-    (slot cajaAbierta (type INTEGER) (default -1)) 
+    (slot cajaAbierta (type INTEGER) (default -1))
+    (slot cerrarCaja (allowed-values si no) (default no)) 
 )
-(deffacts controlador
+(deffacts ctrl
     (control)
 )
 ; con el controlador he conseguido que solo se pueda abrir una caja
 ; cuando cajaAbierta (rollo puntero a la caja abierta) es igual a -1, hay que abrir caja
+
 ; TODO: encontrar manera de disparar cierraCaja cuando NO QUEDEN MÁS productos
 ; del TIPO de la caja con id cajaAbierta
 
@@ -96,17 +98,42 @@
     (printout t crlf "Producto empaquetado: " ?vp ?vc crlf)
 )
 
-(defrule cierraCaja
-    ?ctrl <- (control (cajaAbierta ?cid))
-    ?hc <- (caja (id ?id) (volumen ?vc) (abierta si) (tipo ?tc))
-    ?hp <- (producto (tipo ?tp) (volumen ?vp) (empaq no))
+(defrule noQuedanProductosPorEmpaquetar
+    ?ctrl   <- (control (cajaAbierta ?ca) (cerrarCaja no))
+    ?hc     <- (caja (id ?id) (tipo ?tc) (volumen ?vc))
 
-    (test (eq ?cid ?id))
-    (test (eq ?tc ?tp))
-    (test (> ?vp ?vc))
-
+    (test (eq ?id ?ca))
+    (test      
+            (or                                ;OR : Una de dos posibilidades
+                (eq                             ;1: la cantidad de productos no empaquetados del tipo de la caja abierta es 0
+                    (length$ (find-all-facts ((?f producto)) (and (eq ?f:tipo ?tc) (eq ?f:empaq no)))) 
+                    0
+                )
+                (eq                         ;2: la cantidad de los productos no empaquetados del tipo de la caja que caben en la caja = 0  
+                    (length$ (find-all-facts ((?f producto))    (and
+                                                                    (<= ?f:volumen ?vc)
+                                                                    (and 
+                                                                        (eq ?f:tipo ?tc) 
+                                                                        (eq ?f:empaq no)
+                                                                    ))) 
+                                                                )
+                    0
+                )
+            )
+    )
     =>
-    (modify ?ctrl (cajaAbierta -1))
+    (modify ?ctrl (cerrarCaja si))
+)
+
+
+(defrule cierraCaja
+    ?ctrl <- (control (cajaAbierta ?ca) (cerrarCaja si))
+    ;?hp <- (producto (tipo ?tp) (volumen ?vp) (empaq no))
+    ?hc <- (caja (id ?idcaja) (volumen ?vc) (abierta si) (tipo ?tc))
+
+    (test (eq ?ca ?idcaja))
+    =>
+    (modify ?ctrl (cajaAbierta -1) (cerrarCaja no))
     (modify ?hc (abierta no))
 )
 
@@ -122,7 +149,4 @@
     (modify ?hc (tipo ?tp) (abierta si))
     (printout t crlf "Caja ligada " ?tp crlf)
 )
-
-
-
 
