@@ -23,6 +23,7 @@
     (caja (id 1) (volumen 25) (abierta no))
     (caja (id 2) (volumen 25) (abierta no))
     (caja (id 3) (volumen 25) (abierta no))
+    (caja (id 4) (volumen 25) (abierta no))
 )
 
 (deffacts productos
@@ -33,61 +34,31 @@
     (producto (nombre "mierda fragil")  (tipo fragil) (envuelto no) (volumen 7))
     (producto (nombre "likens")         (tipo fragil) (envuelto no) (volumen 19))
     (producto (nombre "likens light")   (tipo fragil) (envuelto no) (volumen 6))
-    ;(producto (nombre "kaka")           (tipo pesado) (envuelto no) (volumen 12))
-; Comentado -> prueba el comentario de abajo del TODO -> no quedan más productos de un tipo
-; Sin comentario -> Empaqueta todo !!
 )
 
-;--------------------- Reglas ---------------------
 
-; - Cada artículo se envuelve de manera individual.
-; - En las cajas sólo podemos empaquetar artículos envueltos.
-; - Todos los artículos de la misma caja son del mismo tipo, es decir, 
-;   un artículo frágil no se empaquetará en una caja que ya se ha abierto para meter artículos pesados.
-
-; - Si tenemos una caja ya empezada (tiene tipo asignado?) con algún artículo, seguiremos 
-;   llenándola con artículos del mismo tipo (frágil o pesado) antes de abrir una caja nueva.
-
-; - Cada artículo y caja tienen unos volúmenes asociados, de forma que un 
-;   artículo podrá empaquetarse en una caja si el volumen disponible en ésta es 
-;   mayor que el volumen del artículo.
-
-; def_function NO ES DEFRULE!
-; not afines -> simetrico
-; dictar orden de ejecucion (activaciono) de reglas con variables de control
-
-(deftemplate control
-    (slot cajaAbierta (type INTEGER) (default -1))
-    (slot cerrarCaja (allowed-values si no) (default no)) 
+(deftemplate control                                      
+    (slot cajaAbierta (type INTEGER) (default -1))          ;cuando una caja este abierta, este slot mantiene el id de la caja
+    (slot cerrarCaja (allowed-values si no) (default no))   ;cuando se tenga que cerrar una caja, este slot tomará el valor si
 )
 (deffacts ctrl
     (control)
 )
-; con el controlador he conseguido que solo se pueda abrir una caja
-; cuando cajaAbierta (rollo puntero a la caja abierta) es igual a -1, hay que abrir caja
 
-; TODO: encontrar manera de disparar cierraCaja cuando NO QUEDEN MÁS productos
-; del TIPO de la caja con id cajaAbierta
+;--------------------- Reglas ---------------------
+
 
 (defrule envolverProducto
-    ?hp <- (producto (envuelto no))
+    ?hp <- (producto (nombre ?n) (envuelto no))
     =>
     (modify ?hp (envuelto si))
-    (printout t crlf "Producto envuelto" ?hp crlf)
+    (printout t crlf "Producto " ?n " envuelto" crlf)
 )
-
-;(defrule cajaLlena
-    ;?hc <- (caja (volumen ?vc) (abierta si) (tipo ?tc))
-    ;?hpPesado <- (producto (tipo ?tp) (volumen ?vpesi))
-    ;?hpLigero <- (producto (tipo ?tp) (volumen ?vlig))
-    ;(test (>= ?vpes ?vlig))
-;
-;)
 
 (defrule empaquetarProducto
     ?ctrl <- (control (cajaAbierta ?cid))
     ?hc <- (caja (id ?id) (abierta si) (volumen ?vc) (tipo ?tc))
-    ?hp <- (producto (envuelto si) (empaq no) (volumen ?vp) (tipo ?tp))
+    ?hp <- (producto (nombre ?n) (envuelto si) (empaq no) (volumen ?vp) (tipo ?tp))
 
     (test (eq ?id ?cid))
     (test (>= ?vc ?vp))
@@ -95,7 +66,7 @@
     =>
     (modify ?hp (empaq ?id))
     (modify ?hc (volumen (- ?vc ?vp)))
-    (printout t crlf "Producto empaquetado: " ?vp ?vc crlf)
+    (printout t crlf "Producto " ?n " empaquetado" crlf)
 )
 
 (defrule noQuedanProductosPorEmpaquetar
@@ -111,10 +82,10 @@
                 )
                 (eq                         ;2: la cantidad de los productos no empaquetados del tipo de la caja que caben en la caja = 0  
                     (length$ (find-all-facts ((?f producto))    (and
-                                                                    (<= ?f:volumen ?vc)
+                                                                    (<= ?f:volumen ?vc)     ; cabe en la caja?
                                                                     (and 
-                                                                        (eq ?f:tipo ?tc) 
-                                                                        (eq ?f:empaq no)
+                                                                        (eq ?f:tipo ?tc)    ; es del mismo tipo que el de la caja?
+                                                                        (eq ?f:empaq no)    ; esta por empaquetar?
                                                                     ))) 
                                                                 )
                     0
@@ -123,18 +94,20 @@
     )
     =>
     (modify ?ctrl (cerrarCaja si))
+    (printout t crlf "No se pueden empaquetar mas productos de tipo " ?tc crlf)
 )
 
 
 (defrule cierraCaja
     ?ctrl <- (control (cajaAbierta ?ca) (cerrarCaja si))
     ;?hp <- (producto (tipo ?tp) (volumen ?vp) (empaq no))
-    ?hc <- (caja (id ?idcaja) (volumen ?vc) (abierta si) (tipo ?tc))
+    ?hc <- (caja (id ?id) (volumen ?vc) (abierta si) (tipo ?tc))
 
-    (test (eq ?ca ?idcaja))
+    (test (eq ?ca ?id))
     =>
     (modify ?ctrl (cajaAbierta -1) (cerrarCaja no))
     (modify ?hc (abierta no))
+    (printout t crlf "Caja " ?id " cerrada" crlf)
 )
 
 
@@ -147,6 +120,6 @@
 
     (modify ?ctrl (cajaAbierta ?id))
     (modify ?hc (tipo ?tp) (abierta si))
-    (printout t crlf "Caja ligada " ?tp crlf)
+    (printout t crlf "Caja " ?id " abierta. Tipo " ?tp crlf)
 )
 
