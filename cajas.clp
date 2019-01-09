@@ -30,10 +30,10 @@
     (producto (nombre "almax")          (tipo normal) (envuelto no) (volumen 11))
     (producto (nombre "paracetamol")    (tipo normal) (envuelto si) (volumen 21))
     (producto (nombre "almax forte")    (tipo pesado) (envuelto no) (volumen 9))
-    (producto (nombre "tranquis")       (tipo pesado) (envuelto si) (volumen 6))
-    (producto (nombre "mierda fragil")  (tipo fragil) (envuelto no) (volumen 7))
-    (producto (nombre "likens")         (tipo fragil) (envuelto no) (volumen 19))
-    (producto (nombre "likens light")   (tipo fragil) (envuelto no) (volumen 6))
+    (producto (nombre "migas")          (tipo pesado) (envuelto si) (volumen 6))
+    (producto (nombre "cristal")        (tipo fragil) (envuelto no) (volumen 7))
+    (producto (nombre "botellas")       (tipo fragil) (envuelto no) (volumen 19))
+    (producto (nombre "loro")          (tipo fragil) (envuelto no) (volumen 6))
 )
 
 
@@ -47,12 +47,11 @@
 
 ;--------------------- Reglas ---------------------
 
-
 (defrule envolverProducto
     ?hp <- (producto (nombre ?n) (envuelto no))
     =>
     (modify ?hp (envuelto si))
-    (printout t crlf "Producto " ?n " envuelto" crlf)
+    (printout t "Producto " ?n " envuelto" crlf)
 )
 
 (defrule empaquetarProducto
@@ -66,7 +65,7 @@
     =>
     (modify ?hp (empaq ?id))
     (modify ?hc (volumen (- ?vc ?vp)))
-    (printout t crlf "Producto " ?n " empaquetado" crlf)
+    (printout t "Producto " ?n " empaquetado" crlf)
 )
 
 (defrule noQuedanProductosPorEmpaquetar
@@ -94,7 +93,7 @@
     )
     =>
     (modify ?ctrl (cerrarCaja si))
-    (printout t crlf "No se pueden empaquetar mas productos de tipo " ?tc crlf)
+    (printout t "No se pueden empaquetar mas productos de tipo " ?tc crlf)
 )
 
 
@@ -107,7 +106,7 @@
     =>
     (modify ?ctrl (cajaAbierta -1) (cerrarCaja no))
     (modify ?hc (abierta no))
-    (printout t crlf "Caja " ?id " cerrada" crlf)
+    (printout t "Caja " ?id " cerrada" crlf)
 )
 
 
@@ -120,6 +119,6 @@
 
     (modify ?ctrl (cajaAbierta ?id))
     (modify ?hc (tipo ?tp) (abierta si))
-    (printout t crlf "Caja " ?id " abierta. Tipo " ?tp crlf)
+    (printout t "Caja " ?id " abierta. Tipo " ?tp crlf)
 )
 
